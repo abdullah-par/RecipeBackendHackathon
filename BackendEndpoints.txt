@@ -1,0 +1,112 @@
+### 1. Recipes (Search, Filtering, Pagination)
+
+**GET All Recipes (Feed) — Public**
+GET /api/recipes?page=1&pageSize=10
+- Returns: 200 OK with PagedResultDto<RecipeSummaryDto>
+- Query Params:
+  - page (optional, default: 1)
+  - pageSize (optional, default: 10)
+
+**GET Search & Filter Recipes — Public**
+GET /api/recipes/search?q=pasta&categoryId=2&page=1&pageSize=10
+- Returns: 200 OK with PagedResultDto<RecipeSummaryDto>
+- Query Params:
+  - q (optional): Search term matches against Title, Description, Ingredient Names, or Category Names.
+  - categoryId (optional): Filter explicitly by a single category ID.
+  - page (optional, default: 1)
+  - pageSize (optional, default: 10)
+
+**GET Single Recipe by ID — Public**
+GET /api/recipes/{id}
+- Returns: 200 OK with full RecipeDto details. 404 Not Found if it doesn't exist.
+
+**POST Create Recipe — Auth Required**
+POST /api/recipes
+Authorization: Bearer <token>
+- Body (CreateRecipeDto):
+{
+  "title": "Spicy Chicken Pasta",
+  "description": "A delicious, quick chicken recipe.",
+  "steps": ["Boil water", "Cook pasta", "Fry chicken"],
+  "ingredients": [
+    { "name": "Pasta", "quantity": "250g" },
+    { "name": "Chicken", "quantity": "500g" }
+  ],
+  "categoryIds": [1, 5]
+}
+- Returns: 201 Created with the newly created RecipeDto.
+
+**PUT Update Recipe — Auth Required**
+PUT /api/recipes/{id}
+Authorization: Bearer <token>
+- Body (UpdateRecipeDto): Include any fields to update (title, description, steps, ingredients, categoryIds).
+- Returns: 200 OK with updated RecipeDto. 404 or 401 if not the owner.
+
+**DELETE Recipe — Auth Required**
+DELETE /api/recipes/{id}
+Authorization: Bearer <token>
+- Returns: 204 No Content if successful. 404 if recipe not found or not the owner.
+
+**POST Upload Recipe Image — Auth Required**
+POST /api/recipes/{id}/image
+Authorization: Bearer <token>
+- Form Data: Send the file via multipart/form-data with the key name 'file' (Limit 5MB, .jpg, .jpeg, .png, .webp, .gif).
+- Returns: 200 OK with { "imageUrl": "/uploads/recipes/123_uuid.jpg" }.
+
+---
+
+### 2. Comments
+
+**GET Comments for a Recipe — Public**
+GET /api/comments/recipe/{recipeId}
+- Returns: 200 OK with a JSON array [CommentDto].
+
+**POST Add a Comment — Auth Required**
+POST /api/comments
+Authorization: Bearer <token>
+- Body (CreateCommentDto):
+{
+  "recipeId": 15,
+  "body": "This looks incredible! Can't wait to try it."
+}
+- Returns: 201 Created with the newly created CommentDto.
+
+**DELETE a Comment — Auth Required**
+DELETE /api/comments/{id}
+Authorization: Bearer <token>
+- Returns: 204 No Content. (Users can only delete their own comments.)
+
+---
+
+### 3. Ratings
+
+**GET Ratings for a Recipe — Public**
+GET /api/ratings/recipe/{recipeId}
+- Returns: 200 OK with a JSON array [RatingDto].
+
+**POST Add/Update a Rating — Auth Required**
+POST /api/ratings
+Authorization: Bearer <token>
+- Body (CreateRatingDto): (Score must be between 1 and 5)
+{
+  "recipeId": 15,
+  "score": 5
+}
+- Note: If the user has already rated this recipe, it will update their existing score instead of creating a duplicate.
+- Returns: 200 OK or 201 Created with the RatingDto.
+
+**DELETE a Rating — Auth Required**
+DELETE /api/ratings/{id}
+Authorization: Bearer <token>
+- Returns: 204 No Content. (Users can only delete their own rating.)
+
+### Notes for the Frontend Developer
+- Pagination Returns: All pagination endpoints return a wrapper object:
+{
+  "items": [...],
+  "totalCount": 25,
+  "page": 1,
+  "pageSize": 10,
+  "totalPages": 3
+}
+- Errors: Validation errors return an automatic 400 Bad Request. Internal errors return a 500 via the global ExceptionMiddleware.

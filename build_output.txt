@@ -1,0 +1,11 @@
+﻿  Determining projects to restore...
+  All projects are up-to-date for restore.
+C:\Users\islam\OneDrive\Desktop\RecipeBackendHackathon\DTOs\RecipeDtos.cs(173,2): error CS1513: } expected [C:\Users\islam\OneDrive\Desktop\RecipeBackendHackathon\RecipeSugesstionApp.csproj]
+
+Build FAILED.
+
+C:\Users\islam\OneDrive\Desktop\RecipeBackendHackathon\DTOs\RecipeDtos.cs(173,2): error CS1513: } expected [C:\Users\islam\OneDrive\Desktop\RecipeBackendHackathon\RecipeSugesstionApp.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:01.65
