@@ -10,6 +10,7 @@ namespace RecipeSugesstionApp.Services
     {
         Task<RecipeDto?> GetByIdAsync(int id);
         Task<IEnumerable<RecipeSummaryDto>> GetAllAsync(string? search, int? categoryId);
+        Task<IEnumerable<RecipeSummaryDto>> GetByUserIdAsync(int userId);
         Task<RecipeDto> CreateAsync(int userId, CreateRecipeDto dto);
         Task<RecipeDto?> UpdateAsync(int recipeId, int userId, UpdateRecipeDto dto);
         Task<bool> DeleteAsync(int recipeId, int userId);
@@ -59,6 +60,29 @@ namespace RecipeSugesstionApp.Services
             });
         }
 
+        public async Task<IEnumerable<RecipeSummaryDto>> GetByUserIdAsync(int userId)
+        {
+            var recipes = await _db.Recipes
+                .Include(r => r.User)
+                .Include(r => r.RecipeCategories).ThenInclude(rc => rc.Category)
+                .Include(r => r.Ratings)
+                .Where(r => r.UserId == userId)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
+
+            return recipes.Select(r => new RecipeSummaryDto
+            {
+                RecipeId = r.RecipeId,
+                Title = r.Title,
+                ImageUrl = r.ImageUrl,
+                AuthorUsername = r.User?.Username ?? "Unknown",
+                Categories = r.RecipeCategories.Select(rc => rc.Category?.Name ?? "").ToList(),
+                AverageRating = r.Ratings.Any() ? r.Ratings.Average(rt => rt.Score) : 0,
+                RatingCount = r.Ratings.Count,
+                CreatedAt = r.CreatedAt
+            });
+        }
+
         // ── GET BY ID ─────────────────────────────────────────────────────────
         public async Task<RecipeDto?> GetByIdAsync(int id)
         {
@@ -81,10 +105,16 @@ namespace RecipeSugesstionApp.Services
                 UserId = userId,
                 Title = dto.Title,
                 Description = dto.Description,
-                Steps = JsonSerializer.Serialize(dto.Steps),
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
+
+            // Steps (normalized)
+            recipe.Steps = dto.Steps.Select((s, index) => new Step
+            {
+                Instruction = s,
+                Order = index + 1
+            }).ToList();
 
             // Ingredients
             recipe.Ingredients = dto.Ingredients.Select(i => new Ingredient
@@ -112,6 +142,7 @@ namespace RecipeSugesstionApp.Services
         {
             var recipe = await _db.Recipes
                 .Include(r => r.Ingredients)
+                .Include(r => r.Steps)
                 .Include(r => r.RecipeCategories)
                 .FirstOrDefaultAsync(r => r.RecipeId == recipeId && r.UserId == userId);
 
@@ -119,8 +150,18 @@ namespace RecipeSugesstionApp.Services
 
             if (dto.Title != null) recipe.Title = dto.Title;
             if (dto.Description != null) recipe.Description = dto.Description;
-            if (dto.Steps != null) recipe.Steps = JsonSerializer.Serialize(dto.Steps);
             recipe.UpdatedAt = DateTime.UtcNow;
+
+            if (dto.Steps != null)
+            {
+                _db.Steps.RemoveRange(recipe.Steps);
+                recipe.Steps = dto.Steps.Select((s, index) => new Step
+                {
+                    RecipeId = recipeId,
+                    Instruction = s,
+                    Order = index + 1
+                }).ToList();
+            }
 
             if (dto.Ingredients != null)
             {
@@ -191,7 +232,7 @@ namespace RecipeSugesstionApp.Services
             AuthorUsername = r.User?.Username ?? "Unknown",
             Title = r.Title,
             Description = r.Description,
-            Steps = JsonSerializer.Deserialize<List<string>>(r.Steps) ?? new(),
+            Steps = r.Steps.OrderBy(s => s.Order).Select(s => s.Instruction).ToList(),
             ImageUrl = r.ImageUrl,
             CreatedAt = r.CreatedAt,
             UpdatedAt = r.UpdatedAt,

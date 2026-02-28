@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RecipeSugesstionApp.DTOs;
+using RecipeSugesstionApp.Repositories;
 using RecipeSugesstionApp.Services;
 
 namespace RecipeSugesstionApp.Controllers
@@ -11,32 +12,46 @@ namespace RecipeSugesstionApp.Controllers
     public class RecipesController : ControllerBase
     {
         private readonly IRecipeService _recipes;
+        private readonly IRecipeRepository _repo;
         private readonly IWebHostEnvironment _env;
 
-        public RecipesController(IRecipeService recipes, IWebHostEnvironment env)
+        public RecipesController(IRecipeService recipes, IRecipeRepository repo, IWebHostEnvironment env)
         {
             _recipes = recipes;
+            _repo = repo;
             _env = env;
         }
 
         // ── GET /api/recipes ─────────────────────────────────────────────────
-        /// <summary>Get basic recipe feed. (Public)</summary>
+        /// <summary>Get basic recipe feed with pagination. (Public)</summary>
         [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<RecipeSummaryDto>), 200)]
-        public async Task<IActionResult> GetAll()
+        [ProducesResponseType(typeof(object), 200)]
+        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var result = await _recipes.GetAllAsync(null, null);
-            return Ok(result);
+            var (recipes, total) = await _repo.SearchAsync(null, null, page, pageSize);
+            return Ok(new { recipes, total, page, pageSize });
         }
 
         // ── SEARCH /api/recipes/search?q=pasta ────────────────────────────────
-        /// <summary>Search for recipes by title, description, ingredients, or category.</summary>
+        /// <summary>Search for recipes using ADO.NET Layer. (Public)</summary>
         [HttpGet("search")]
-        [ProducesResponseType(typeof(IEnumerable<RecipeSummaryDto>), 200)]
-        public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int? categoryId)
+        [ProducesResponseType(typeof(object), 200)]
+        public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int? categoryId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var result = await _recipes.GetAllAsync(q, categoryId);
-            return Ok(result);
+            var (recipes, total) = await _repo.SearchAsync(q, categoryId, page, pageSize);
+            return Ok(new { recipes, total, page, pageSize });
+        }
+
+        // ── GET /api/recipes/my ──────────────────────────────────────────────
+        /// <summary>Get recipes created by the current user. (Auth required)</summary>
+        [HttpGet("my")]
+        [Authorize]
+        [ProducesResponseType(typeof(IEnumerable<RecipeSummaryDto>), 200)]
+        public async Task<IActionResult> GetMyRecipes()
+        {
+            var userId = GetUserId();
+            var recipes = await _recipes.GetByUserIdAsync(userId);
+            return Ok(recipes);
         }
 
         // ── GET /api/recipes/{id} ─────────────────────────────────────────────

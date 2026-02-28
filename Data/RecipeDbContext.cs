@@ -10,6 +10,7 @@ namespace RecipeSugesstionApp.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Recipe> Recipes { get; set; }
         public DbSet<Ingredient> Ingredients { get; set; }
+        public DbSet<Step> Steps { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<RecipeCategory> RecipeCategories { get; set; }
         public DbSet<Rating> Ratings { get; set; }
@@ -18,6 +19,13 @@ namespace RecipeSugesstionApp.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // ── Steps ────────────────────────────────────────────────────────
+            modelBuilder.Entity<Step>()
+                .HasOne(s => s.Recipe)
+                .WithMany(r => r.Steps)
+                .HasForeignKey(s => s.RecipeId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // ── RecipeCategory composite PK ──────────────────────────────────
             modelBuilder.Entity<RecipeCategory>()

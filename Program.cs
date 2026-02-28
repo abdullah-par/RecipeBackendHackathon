@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using RecipeSugesstionApp.Data;
 using RecipeSugesstionApp.Middleware;
+using RecipeSugesstionApp.Repositories;
 using RecipeSugesstionApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,6 +38,7 @@ builder.Services.AddAuthorization();
 // ── Services ──────────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IRecipeService, RecipeService>();
+builder.Services.AddScoped<IRecipeRepository, RecipeRepository>();
 
 // ── Controllers / OpenAPI ─────────────────────────────────────────────────────
 builder.Services.AddControllers();
