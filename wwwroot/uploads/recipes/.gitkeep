@@ -1,0 +1,2 @@
+This folder stores uploaded recipe images.
+Files are served at: /uploads/recipes/{filename}
