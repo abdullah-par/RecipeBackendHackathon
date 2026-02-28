@@ -9,7 +9,7 @@ namespace RecipeSugesstionApp.Services
     public interface IRecipeService
     {
         Task<RecipeDto?> GetByIdAsync(int id);
-        Task<IEnumerable<RecipeSummaryDto>> GetAllAsync(string? search, int? categoryId);
+        Task<PagedResultDto<RecipeSummaryDto>> GetAllAsync(string? search, int? categoryId, int page, int pageSize);
         Task<RecipeDto> CreateAsync(int userId, CreateRecipeDto dto);
         Task<RecipeDto?> UpdateAsync(int recipeId, int userId, UpdateRecipeDto dto);
         Task<bool> DeleteAsync(int recipeId, int userId);
@@ -23,7 +23,7 @@ namespace RecipeSugesstionApp.Services
         public RecipeService(RecipeDbContext db) => _db = db;
 
         // ── GET ALL (with optional search & category filter) ─────────────────
-        public async Task<IEnumerable<RecipeSummaryDto>> GetAllAsync(string? search, int? categoryId)
+        public async Task<PagedResultDto<RecipeSummaryDto>> GetAllAsync(string? search, int? categoryId, int page, int pageSize)
         {
             var query = _db.Recipes
                 .Include(r => r.User)
@@ -44,9 +44,13 @@ namespace RecipeSugesstionApp.Services
             if (categoryId.HasValue)
                 query = query.Where(r => r.RecipeCategories.Any(rc => rc.CategoryId == categoryId.Value));
 
-            var recipes = await query.OrderByDescending(r => r.CreatedAt).ToListAsync();
+            var totalCount = await query.CountAsync();
+            var recipes = await query.OrderByDescending(r => r.CreatedAt)
+                                     .Skip((page - 1) * pageSize)
+                                     .Take(pageSize)
+                                     .ToListAsync();
 
-            return recipes.Select(r => new RecipeSummaryDto
+            var items = recipes.Select(r => new RecipeSummaryDto
             {
                 RecipeId = r.RecipeId,
                 Title = r.Title,
@@ -57,6 +61,14 @@ namespace RecipeSugesstionApp.Services
                 RatingCount = r.Ratings.Count,
                 CreatedAt = r.CreatedAt
             });
+
+            return new PagedResultDto<RecipeSummaryDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
 
         // ── GET BY ID ─────────────────────────────────────────────────────────

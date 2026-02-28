@@ -20,22 +20,22 @@ namespace RecipeSugesstionApp.Controllers
         }
 
         // ── GET /api/recipes ─────────────────────────────────────────────────
-        /// <summary>Get basic recipe feed. (Public)</summary>
+        /// <summary>Get basic recipe feed with pagination. (Public)</summary>
         [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<RecipeSummaryDto>), 200)]
-        public async Task<IActionResult> GetAll()
+        [ProducesResponseType(typeof(PagedResultDto<RecipeSummaryDto>), 200)]
+        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var result = await _recipes.GetAllAsync(null, null);
+            var result = await _recipes.GetAllAsync(null, null, page, pageSize);
             return Ok(result);
         }
 
         // ── SEARCH /api/recipes/search?q=pasta ────────────────────────────────
         /// <summary>Search for recipes by title, description, ingredients, or category.</summary>
         [HttpGet("search")]
-        [ProducesResponseType(typeof(IEnumerable<RecipeSummaryDto>), 200)]
-        public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int? categoryId)
+        [ProducesResponseType(typeof(PagedResultDto<RecipeSummaryDto>), 200)]
+        public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int? categoryId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            var result = await _recipes.GetAllAsync(q, categoryId);
+            var result = await _recipes.GetAllAsync(q, categoryId, page, pageSize);
             return Ok(result);
         }
 
