@@ -201,10 +201,6 @@ namespace RecipeSugesstionApp.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("Steps")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -236,6 +232,32 @@ namespace RecipeSugesstionApp.Migrations
                     b.HasIndex("CategoryId");
 
                     b.ToTable("RecipeCategories");
+                });
+
+            modelBuilder.Entity("RecipeSugesstionApp.Models.Step", b =>
+                {
+                    b.Property<int>("StepId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StepId"));
+
+                    b.Property<string>("Instruction")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RecipeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("StepId");
+
+                    b.HasIndex("RecipeId");
+
+                    b.ToTable("Steps");
                 });
 
             modelBuilder.Entity("RecipeSugesstionApp.Models.User", b =>
@@ -353,6 +375,17 @@ namespace RecipeSugesstionApp.Migrations
                     b.Navigation("Recipe");
                 });
 
+            modelBuilder.Entity("RecipeSugesstionApp.Models.Step", b =>
+                {
+                    b.HasOne("RecipeSugesstionApp.Models.Recipe", "Recipe")
+                        .WithMany("Steps")
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Recipe");
+                });
+
             modelBuilder.Entity("RecipeSugesstionApp.Models.Category", b =>
                 {
                     b.Navigation("RecipeCategories");
@@ -367,6 +400,8 @@ namespace RecipeSugesstionApp.Migrations
                     b.Navigation("Ratings");
 
                     b.Navigation("RecipeCategories");
+
+                    b.Navigation("Steps");
                 });
 
             modelBuilder.Entity("RecipeSugesstionApp.Models.User", b =>
